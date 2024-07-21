@@ -1,0 +1,3 @@
+Ajouter cette ligne de code.
+api_key = 'sk-proj-CBZPiIqZfuhNwyQ27qvNT3BlbkFJFWcBUSiIPKnuALAVeYZU'
+openai.api_key = api_key
