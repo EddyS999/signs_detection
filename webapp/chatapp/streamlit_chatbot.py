@@ -3,9 +3,6 @@ import openai
 
 st.title("Sign communicator")
 
-# Définissez votre clé API OpenAI
-openai.api_key = "sk-proj-FT0Kg1khbzoExwlqZOyhT3BlbkFJtNj4cUdFTwQLfDSeYTix"
-
 # Initialisez le modèle OpenAI
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-3.5-turbo"
