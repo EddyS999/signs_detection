@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+<style>
+    body,
+    html {
+        height: 100%;
+    }
+
+    .messages-box {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .messages-list {
+        padding-left: 0;
+    }
+
+    .message {
+        margin-bottom: 15px;
+        list-style: none;
+    }
+
+    .message-text {
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .sent {
+        background-color: #dcf8c6;
+        align-self: flex-end;
+    }
+
+    .received {
+        background-color: #f1f0f0;
+        align-self: flex-start;
+    }
+
+    .message-form {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 10px;
+        background-color: #f8f9fa;
+    }
+
+    .message-input {
+        flex: 1;
+        border-radius: 0;
+        border-right: none;
+    }
+
+    .btn-send,
+    .btn-camera {
+        border-radius: 0;
+    }
+
+    .chat-container {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .suggestions {
+        list-style: none;
+        padding: 0;
+        margin: 5px 0;
+    }
+
+    .suggestion-item {
+        background-color: #e9ecef;
+        padding: 5px;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+        background-color: #ced4da;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="card flex-grow-1">
+        <div class="card-header bg-primary text-white">Sign Detector chat</div>
+        <div class="card-body messages-box">
+            <ul class="list-unstyled messages-list">
+                <li class="message received">
+                    <div class="message-text">
+                        <div class="message-sender">
+                            <b>AI Chatbot</b>
+                        </div>
+                        <div class="message-content">
+                            Coucou ! Comment allez vous ? Je suis pret à vous aider !
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <form class="message-form">
+        {% csrf_token %}
+        <div class="input-group">
+            <input type="text" class="form-control message-input" placeholder="Ecrivez votre message"
+                oninput="fetchSuggestions(this.value)">
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary btn-send">Send</button>
+                <button type="button" class="btn btn-secondary btn-camera" onclick="toggleCamera()">Activez la
+                    caméra</button>
+                <button type="button" class="btn btn-secondary btn-stop-camera" style="display: none;"
+                    onclick="deactivateCamera()">Désactivez la camera</button>
+            </div>
+        </div>
+        <ul class="suggestions list-unstyled"></ul>
+    </form>
+</div>
+
+<script>
+    const messagesList = document.querySelector('.messages-list');
+    const messageForm = document.querySelector('.message-form');
+    const messageInput = document.querySelector('.message-input');
+    const suggestionsBox = document.querySelector('.suggestions');
+    let videoStream;
+    let videoElement;
+    let captureInterval;
+
+    // Handle the display of user messages and chatbot responses
+    messageForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const message = messageInput.value.trim();
+        if (message.length === 0) {
+            return;
+        }
+
+        addMessageToChat('Vous', message, 'sent');
+        messageInput.value = '';
+        suggestionsBox.innerHTML = '';
+
+        fetch('', {
+            method: 'POST',
+            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                'csrfmiddlewaretoken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'message': message
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                addMessageToChat('AI Chatbot', data.response, 'received');
+                updateSuggestions(data.suggestions);
+            });
+    });
+
+    // Add message to chat
+    function addMessageToChat(sender, message, messageType) {
+        const messageItem = document.createElement('li');
+        messageItem.classList.add('message', messageType);
+        messageItem.innerHTML = `
+        <div class="message-text">
+            <div class="message-sender">
+                <b>${sender}</b>
+            </div>
+            <div class="message-content">
+                ${message}
+            </div>
+        </div>`;
+        messagesList.appendChild(messageItem);
+        messagesList.scrollTop = messagesList.scrollHeight;
+    }
+
+
+    function fetchSuggestions(message) {
+        //Si le message est vide, la boite de suggestion est vidée 
+        if (message.length === 0) {
+            suggestionsBox.innerHTML = '';
+            return;
+        }
+        //Sinon on envoit un post avec le message 
+        fetch('', {
+            method: 'POST',
+            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                'csrfmiddlewaretoken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'message': message
+            })
+        })
+            //Lorsque la réponse est reçue, on converti en JSON et la suggestion est update
+            .then(response => response.json())
+            .then(data => {
+                updateSuggestions(data.suggestions);
+            });
+    }
+
+
+    /*     updateSuggestions
+    
+    Objectif : Met à jour la liste des suggestions
+    Fonctionnement : 
+    Pour chaque suggestion, crée un élément de liste, et ajoute un écouteur d'événement pour que lorsque l'utilisateur clique 
+    sur une suggestion, elle soit automatiquement ajoutée à l'entrée de message 
+    et le formulaire soit soumis.
+    */
+    function updateSuggestions(suggestions) {
+        suggestionsBox.innerHTML = '';
+        suggestions.forEach(suggestion => {
+            const suggestionItem = document.createElement('li');
+            suggestionItem.classList.add('suggestion-item');
+            suggestionItem.textContent = suggestion;
+            suggestionItem.addEventListener('click', () => {
+                messageInput.value = suggestion;
+                messageForm.dispatchEvent(new Event('submit'));
+            });
+            suggestionsBox.appendChild(suggestionItem);
+        });
+    }
+
+    // Activate the camera
+    async function toggleCamera() {
+        const activateButton = document.querySelector('.btn-camera');
+        const deactivateButton = document.querySelector('.btn-stop-camera');
+
+        if (videoElement) {
+            deactivateCamera();
+        } else {
+            activateButton.style.display = 'none';
+            deactivateButton.style.display = 'inline-block';
+
+            const cameras = await getCameras();
+            if (cameras.length > 0) {
+                const cameraId = cameras[1].deviceId; // A changer en fonction de la machine 
+
+                videoElement = document.createElement('video');
+                videoElement.setAttribute('id', 'video');
+                videoElement.setAttribute('width', '320');
+                videoElement.setAttribute('height', '240');
+                document.body.appendChild(videoElement);
+
+                if (navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: { exact: cameraId } }
+                    })
+                        .then(function (stream) {
+                            videoStream = stream;
+                            videoElement.srcObject = stream;
+                            videoElement.play();
+                            captureInterval = setInterval(captureAndPredict, 1000); // Capture every second
+                        })
+                        .catch(function (error) {
+                            console.log("Erreur avec la caméra.");
+                        });
+                }
+            } else {
+                console.log("Aucune caméra détectée.");
+            }
+        }
+    }
+
+    // Deactivate the camera
+    function deactivateCamera() {
+        if (videoElement) {
+            clearInterval(captureInterval);
+            videoElement.pause();
+            videoElement.srcObject = null;
+            videoStream.getTracks().forEach(track => track.stop());
+            videoElement.remove();
+            videoElement = null;
+
+            const activateButton = document.querySelector('.btn-camera');
+            const deactivateButton = document.querySelector('.btn-stop-camera');
+            activateButton.style.display = 'inline-block';
+            deactivateButton.style.display = 'none';
+        }
+    }
+
+    // Capture image from video
+    function captureImage() {
+        if (!videoElement) return null;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg');
+    }
+
+    // Get prediction from server
+    async function getPrediction(imageData) {
+        const response = await fetch('/predict/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ image: imageData })
+        });
+        const data = await response.json();
+        console.log('Prediction:', data.prediction); // Log prediction to verify it's being received
+        return data.prediction;
+    }
+
+    // Capture and predict
+    async function captureAndPredict() {
+        const imageData = captureImage();
+        if (imageData) {
+            const prediction = await getPrediction(imageData);
+            if (prediction) {
+                messageInput.value += ` ${prediction}`;
+            }
+        }
+    }
+
+    // Get list of cameras
+    async function getCameras() {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter(device => device.kind === 'videoinput');
+    }
+</script>
+{% endblock %}

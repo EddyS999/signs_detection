@@ -1,0 +1,24 @@
+Le but de notre projet est de faire une application de traduction de langage de signe sous la forme d'un chatbot. Pour nous faciliter la tache dans la retrasncription des phrases on ajoute une couche utilisant l'api de chatgpt. 
+
+
+Note de développement : 
+- Nous avons essayer d'héberger le chatbot streamlit  avec Django sans savoir que streamlit pouvait sheberger lui mm 
+- Peu de possibilités car l'interface user de Streamlit ne permet pas de manipuler le front. vu la complexité de notre projet On abandonne streamlit pour tout reconstruire nous meme à la main.
+
+- problème lors de l'utilisation de l'API de chat GPT 'ratelimitError' 
+
+
+
+1/ introduction 
+
+2/architecture 
+2.1/Modèle de signe 
+2.2/Application
+2.3/Connexion API chatGPT
+2.4/Hébergement 
+
+3/ difficulté et défis 
+
+4/ Améliorations possibles
+
+5/ Conclusion 
