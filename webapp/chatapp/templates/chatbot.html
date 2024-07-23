@@ -232,7 +232,7 @@
 
             const cameras = await getCameras();
             if (cameras.length > 0) {
-                const cameraId = cameras[1].deviceId; // A changer en fonction de la machine 
+                const cameraId = cameras[0].deviceId; // A changer en fonction de la machine 
 
                 videoElement = document.createElement('video');
                 videoElement.setAttribute('id', 'video');

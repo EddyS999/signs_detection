@@ -23,6 +23,9 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning,
                         module='google.protobuf.symbol_database')
 
+api_key = 'sk-proj-1ScVbB8gUF7uvUR50TTaT3BlbkFJKx72DtfgoKgF4QETOQvV'
+openai.api_key = api_key
+
 
 class PredictView(View):
     @method_decorator(csrf_exempt)
