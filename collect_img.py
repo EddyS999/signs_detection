@@ -48,6 +48,6 @@ for i in mots:
         cv2.imwrite(os.path.join(DATA_DIR, str(
             i), '{}.jpg'.format(counter)), frame)
         counter += 1
-
+# test
 cap.release()
 cv2.destroyAllWindows()
