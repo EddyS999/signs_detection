@@ -13,11 +13,13 @@ if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
 
-mots = ['IloveYou', "Hello", "No", "Yes"]
-dataset_size = 200
+mots = ['Bonjour', "oui", "non", "Je t'aime", "merci", "Je", "étudier", "Examen", "note", "Pourquoi",
+        "qui", "comment", "encore", "dormir", "hier", "diplome", "faim", "dans", "cuisiner", "soif", "maison",
+        "peur", "ordinateur", "cassé", "s'il te plait", "merde", "telephoner", "manger", "boire", "content"]
+dataset_size = 100
 
 # Video capture a changer en fonction de la machine
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 for i in mots:
     if not os.path.exists(os.path.join(DATA_DIR, str(i))):
@@ -27,7 +29,7 @@ for i in mots:
 
     while True:
         ret, frame = cap.read()
-        cv2.putText(frame, 'Press "Z".', (100, 50),
+        cv2.putText(frame, '"Z" pour capturer.', (100, 50),
                     cv2.FONT_HERSHEY_COMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
         cv2.imshow('frame', frame)
         if cv2.waitKey(25) == ord('z'):
@@ -36,6 +38,11 @@ for i in mots:
 
     while counter < dataset_size:
         ret, frame = cap.read()
+        if not ret:
+            print('impossible de lire le flux de la camera')
+            break
+        cv2.putText(frame, f'{counter}/{dataset_size}', (10, 50), cv2.FONT_HERSHEY_COMPLEX, 1,
+                    (0, 255, 0), 2, cv2.LINE_AA)
         cv2.imshow('frame', frame)
         cv2.waitKey(25)
         cv2.imwrite(os.path.join(DATA_DIR, str(
